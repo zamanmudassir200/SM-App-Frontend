@@ -26,7 +26,7 @@ const ForgotPassword = () => {
     <motion.div
       initial={{ opacity: 0.1 }}
       animate={{ opacity: 1 }}
-      className="flex flex-col px-2  bg-blue-500 items-center justify-center min-h-screen"
+      className="flex flex-col px-2  bg-blue-900 items-center justify-center min-h-screen"
     >
       <form
         onSubmit={handleForgotPassword}

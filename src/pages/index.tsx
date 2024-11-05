@@ -1,5 +1,5 @@
 // pages/index.tsx
-
+"use client     "
 // import UserProfile from '../components/UserProfile';
 // import UpdateProfile from '../components/UpdateProfile';
 // import ResetPassword from '../components/ResetPassword';

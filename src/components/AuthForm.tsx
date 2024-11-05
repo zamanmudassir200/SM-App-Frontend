@@ -1,61 +1,73 @@
-import { useState, useEffect } from "react";
+"use client"
+import { useState } from "react";
 import { motion } from "framer-motion";
-import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthStore } from "../store/useAuthStore";
 import { useRouter } from "next/router";
-import { FaEyeSlash } from "react-icons/fa6";
-import { FaEye } from "react-icons/fa";
+import { FaEyeSlash, FaEye } from "react-icons/fa";
 import Link from "next/link";
+import { useMutation } from "@tanstack/react-query";
+import { login, register, AuthResponse, LoginData, RegisterData } from "@/services/authService";
 import "react-toastify/dist/ReactToastify.css";
 
 const AuthForm = () => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // State for show/hide password
+  const [name, setName] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const setToken = useAuthStore((state) => state.setToken);
   const setUser = useAuthStore((state) => state.setUser);
   const router = useRouter();
 
   const isLogin = router.pathname === "/login";
 
-  useEffect(() => {
-    const savedToken = localStorage.getItem("token");
-    if (savedToken) {
-      setToken(savedToken); // Set token in the global state
-      // Optionally fetch user data
-    }
-  }, [setToken]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const url = isLogin
-        ? "http://localhost:3000/v1/users/auth/login"
-        : "http://localhost:3000/v1/users/auth/register";
-      const payload = isLogin ? { email, password } : { name, email, password };
-
-      const response = await axios.post(url, payload);
-
-      // Set token in both state and localStorage
-      setToken(response.data.token);
-      localStorage.setItem("token", response.data.token);
-      setUser(response.data.user);
-
-      toast.success(isLogin ? "Login successful" : "Registration successful");
-      router.push(isLogin ? "/feed" : "/login");
-    } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || "An error occurred, please try again"
-      );
-    }
-  };
-
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev);
+  };
+
+  const loginMutation = useMutation<AuthResponse, Error, LoginData>({
+    mutationFn: async (data: LoginData) => {
+      const response = await login(data);
+      return response;
+    },
+    onSuccess: (data) => {
+      setToken(data.token);
+      setUser(data.user);
+      localStorage.setItem("token", data.token);
+      toast.success("Login successful");
+      router.push("/feed");
+    },
+    onError: (error:any) => {
+      toast.error(error?.response?.data?.message || "An error occurred");
+    }
+  });
+
+  const registerMutation = useMutation<AuthResponse, Error, RegisterData>({
+    mutationFn: async (data: RegisterData) => {
+      const response = await register(data);
+      return response;
+    },
+    onSuccess: (data) => {
+      setToken(data.token);
+      setUser(data.user);
+      localStorage.setItem("token", data.token);
+      toast.success("Registration successful");
+      router.push("/login");
+    },
+    onError: (error:any) => {
+      toast.error(error?.response?.data?.message || "An error occurred");
+    }
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isLogin) {
+      loginMutation.mutate({ email, password });
+    } else {
+      registerMutation.mutate({ name, email, password });
+    }
   };
 
   return (
@@ -91,7 +103,7 @@ const AuthForm = () => {
         />
         <div className="relative mb-4">
           <Input
-            type={showPassword ? "text" : "password"} // Toggle password visibility
+            type={showPassword ? "text" : "password"}
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -115,7 +127,7 @@ const AuthForm = () => {
           <div className="mt-3 text-end">
             <Link
               href={"/forgotPassword"}
-              className="text-blue-500  border-gray-300 hover:underline"
+              className="text-blue-500 border-gray-300 hover:underline"
             >
               Forgot Password?
             </Link>
@@ -126,11 +138,11 @@ const AuthForm = () => {
           <span>
             {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
             {isLogin ? (
-              <Link href={"/signup"} className="text-blue-500  hover:underline">
+              <Link href={"/signup"} className="text-blue-500 hover:underline">
                 Register
               </Link>
             ) : (
-              <Link href={"/login"} className="text-blue-500  hover:underline">
+              <Link href={"/login"} className="text-blue-500 hover:underline">
                 Login
               </Link>
             )}
